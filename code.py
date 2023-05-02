@@ -1,20 +1,12 @@
-import board
-import struct
-import inky_eeprom
 import inky
+from ulab import numpy as np
+import adafruit_imageload
 
-import ulab
-
-print(inky_eeprom.EPDType.from_eeprom())
+bitmap, palette = adafruit_imageload.load("InkywHAT-400x300.bmp")
 
 screen=inky.Inky(colour='yellow')
-
-
-#screen.set_image()
 screen.setup()
-for x in range(50, 250):
-  screen.set_pixel(x,150, inky.YELLOW)
-for x in range(50, 250):
-  screen.set_pixel(x,152, inky.BLACK)
+screen.set_border(inky.BLACK)
+screen.set_image(bitmap)
 
 screen.show()

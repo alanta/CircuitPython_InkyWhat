@@ -1,6 +1,7 @@
 """Inky e-Ink Display Driver."""
 import time
 import struct
+import displayio
 import supervisor # for timing
 import board, microcontroller, busio
 from digitalio import DigitalInOut, Direction, Pull
@@ -12,6 +13,9 @@ try:
     import ulab
 except ImportError:
     raise ImportError('This library requires the ulab numpy-like module')
+
+# Pimoroni has not specified the driver chip
+# Most likely it's an SSD1619A 
 
 # Display colour codes
 WHITE = 0
@@ -94,7 +98,7 @@ class Inky:
             if self.eeprom.display_variant in (1, 6) and self.eeprom.get_color() == 'red':
                 self.lut = 'red_ht'
 
-        self.buf:ulab.numpy.ndarray = ulab.numpy.zeros((self.height, self.width), dtype=ulab.numpy.uint8)
+        self.buf:displayio.Bitmap=displayio.Bitmap(self.width, self.height, 4) # 4 color values is 2 bits per pixel
         self.border_colour = 0
 
         self.dc_pin =  DigitalInOut(dc_pin)
@@ -310,39 +314,31 @@ class Inky:
         """
         region = self.buf
 
-        if self.v_flip:
-            region = ulab.numpy.flip(region, axis=1)
-
-        if self.h_flip:
-            region = ulab.numpy.flip(region, axis=0)
-
-        #if self.rotation:
-        #    //region = ulab.numpy.rot90(region, self.rotation // 90) # Not actually supported by ulab
+        # TODO : Handle flip / rotate?
 
         # Split the image into Black and Color planes
-        #buf_a = numpy.packbits(numpy.where(region == BLACK, 0, 1)).tolist()
-        buf_a = self.packbits(region, lambda x:0 if x==BLACK else 1).tolist()
-        #buf_b = numpy.packbits(numpy.where(region == RED, 1, 0)).tolist()
+
+        buf_a = self.packbits(region, lambda x:x!=WHITE).tolist()
         buf_b = self.packbits(region, lambda x:x==RED).tolist()
 
         self._update(buf_a, buf_b, busy_wait=busy_wait)
 
-    def packbits(self, region, predicate):
-        shape = region.shape
-        outputLength=(shape[0]*shape[1])>>3
+    def packbits(self, region:displayio.Bitmap, predicate):
+        
+        outputLength=(region.width*region.height)>>3
         packedData = ulab.numpy.zeros((outputLength), dtype=ulab.numpy.uint8)
         bitIndex = 0
         currentByte = 0
-
-        for y in range(shape[0]) :
-            for x in range(shape[1]) :
+        
+        for y in range(region.height) :
+            for x in range(region.width) :
                 currentByte = currentByte << 1
-                if(predicate(region[y][x])):
+                if(predicate(region[x,y])):
                     currentByte = currentByte | 1
                 bitIndex+=1
                 if(bitIndex>7):
                     bitIndex=0
-                    byteIndex = (y*shape[1]+x)>>3
+                    byteIndex = (y*region.width+x)>>3
                     packedData[byteIndex]=currentByte
                     currentByte=0
         
@@ -362,10 +358,11 @@ class Inky:
         :param image: Image to copy.
         :type image: :class:`PIL.Image.Image` or :class:`numpy.ndarray` or list
         """
-        if self.rotation % 180 == 0:
-            self.buf = ulab.numpy.array(image, dtype=ulab.numpy.uint8).reshape((self.width, self.height))
-        else:
-            self.buf = ulab.numpy.array(image, dtype=ulab.numpy.uint8).reshape((self.height, self.width))
+        if isinstance(image, displayio.Bitmap):
+            self.buf=image # TODO : copy data? Handle rotation?
+            return
+        
+        raise ValueError("image should be a Bitmap")
 
     def _spi_write(self, dc : bool, values:bytearray):
         """Write values over SPI.
