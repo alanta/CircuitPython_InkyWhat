@@ -1,4 +1,7 @@
 """Inky e-Ink Display Driver."""
+# This is a port of the Pimoroni Inky library to CircuitPython
+# The original library is available at https://github.com/pimoroni/inky/tree/master/library/inky
+
 import time
 import struct
 import displayio
@@ -263,6 +266,7 @@ class Inky:
         self._send_command(0x11, 0x03)  # Data entry mode setting 0x03 = X/Y increment
 
         self._send_command(0x2c, 0x3c)  # VCOM Register, 0x3c = -1.5v?
+        self._send_command(0x22, 0xC7)  # Display Update Sequence
 
         self._send_command(0x3c, 0b00000000)
         if self.border_colour == self.BLACK:
@@ -281,6 +285,8 @@ class Inky:
 
         self._send_command(0x32, self._luts[self.lut])  # Set LUTs
 
+        # Start image data send
+
         self._send_command(0x44, [0x00, (self.cols // 8) - 1])  # Set RAM X Start/End
         self._send_command(0x45, [0x00, 0x00] + packed_height)  # Set RAM Y Start/End
 
@@ -291,13 +297,12 @@ class Inky:
             self._send_command(0x4f, [0x00, 0x00])  # Set RAM Y Pointer Start
             self._send_command(cmd, buf)
 
-        self._send_command(0x22, 0xC7)  # Display Update Sequence
         self._send_command(0x20)  # Trigger Display Update
         time.sleep(0.05)
 
         if busy_wait:
             self._busy_wait()
-            self._send_command(0x10, 0x01)  # Enter Deep Sleep
+        self._send_command(0x10, 0x01)  # Enter Deep Sleep
 
     def set_pixel(self, x, y, v):
         """Set a single pixel on the buffer.
@@ -373,7 +378,6 @@ class Inky:
         self.dc_pin.value = dc
 
         transferLength=len(values)
-        print('SPI '+('CMD' if dc == _SPI_COMMAND else 'DATA')+' : '+''.join('{:02x} '.format(x) for x in values))
         device = SPIDevice(spi=self._spi_bus, chip_select=self.cs_pin, baudrate=488000)
         for start in range(0, transferLength, _SPI_CHUNK_SIZE):
              with device as spi:
@@ -385,17 +389,16 @@ class Inky:
         :param command: command byte
         :param data: optional list of values
         """
+        print('SPI \\x{:02x}'.format(command), end=' ')
+
         self._spi_write(_SPI_COMMAND, bytearray([command]))
         if data is not None:
-            self._send_data(data)
-
-    def _send_data(self, data:bytearray):
-        """Send data over SPI.
-        :param data: list of values
-        """
         if isinstance(data, list):
             data = bytearray(data)
         if isinstance(data, int):
             data = bytearray([data])
-
-        self._spi_write(_SPI_DATA, data)
+            print('{:02x}'.format(len(data)), end=' ')
+            print(''.join('{:02x} '.format(x) for x in data))    
+            self._spi_write(_SPI_DATA, data)
+        else:
+            print('\\x00')
