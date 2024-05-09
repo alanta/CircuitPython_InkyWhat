@@ -1,7 +1,9 @@
-# Connecting InkyWhat to a CircuitPython
+# Connecting InkyWhat to a CircuitPython board
+
+InkyWhat was designed to connect directly to a Raspberry Pi, but it can be connected to any board with SPI and I2C and 4 additional IO pins.
 
 This repo shows how to control an InkyWhat using ESP32 S2 dev board (the Unexpected Maker TinyS2 in this case).
-It should work with any CircuitPython board with I2C, SPI and 4 additional IO pins.
+It should work with any CircuitPython board with sufficient IO.
 
 ## Pinout
 
