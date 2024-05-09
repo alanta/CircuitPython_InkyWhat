@@ -34,20 +34,35 @@ __repo__ = "https://github.com/alanta/CircuitPython_InkyWhat.git"
 
 _START_SEQUENCE = (
     b"\x12\x80\x80"  # Software reset ✅ TODO wait for busy instead of fixed delay
+    b"\x12\x80\x80"  # Software reset ✅ TODO wait for busy instead of fixed delay
     b"\x74\x01\x54"  # set analog block control ✅
     b"\x7e\x01\x3b"  # set digital block control ✅
     b"\x01\x03\x2b\x01\x00"  # driver output control 
     b"\x03\x01\x17"  # Gate driving voltage ✅
-    b"\x04\x03\x41\xac\x32"  # Source Driving voltage ✅
+    b"\x04\x03\x07\xac\x32"  # Source Driving voltage ✅
     b"\x3a\x01\x07"  # Dummy line period ✅
     b"\x3b\x01\x04"  # Gate line width ✅
-    b"\x11\x01\x03"  # Data entry mode setting 0x03 = X/Y increment ✅
+    b"\x3c\x01\x00"  # Border color
     b"\x2c\x01\x3c"  # VCOM Register, 0x3c = -1.5v? ✅
     b"\x22\x01\xc7"  # Display update sequence ✅
-    b"\x3c\x01\x00"  # Border color
+    
     b"\x04\x03\x07\xac\x32" # Set voltage of VSH and VSL (yellow)
     #LUT (yellow)
-    b"\x32\x46\xfa\x94\x8c\xc0\xd0\x00\x00\xfa\x94\x2c\x80\xe0\x00\x00\xfa\x00\x00\x00\x00\x00\x00\xfa\x94\xf8\x80\x50\x00\xcc\xbf\x58\xfc\x80\xd0\x00\x11\x40\x10\x40\x10\x08\x08\x10\x04\x04\x10\x08\x08\x03\x08\x20\x08\x04\x00\x00\x10\x10\x08\x08\x00\x20\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+    b"\x32\x46"
+       b"\xfa\x94\x8c\xc0\xd0\x00\x00"
+       b"\xfa\x94\x2c\x80\xe0\x00\x00"
+       b"\xfa\x00\x00\x00\x00\x00\x00"
+       b"\xfa\x94\xf8\x80\x50\x00\xcc"
+       b"\xbf\x58\xfc\x80\xd0\x00\x11"
+       b"\x40\x10\x40\x10\x08"
+       b"\x08\x10\x04\x04\x10"
+       b"\x08\x08\x03\x08\x20"
+       b"\x08\x04\x00\x00\x10"
+       b"\x10\x08\x08\x00\x20"
+       b"\x00\x00\x00\x00\x00"
+       b"\x00\x00\x00\x00\x00"
+    
+    b"\x11\x01\x03"  # Data entry mode setting 0x03 = X/Y increment ✅
     #         self._send_command(0x44, [0x00, (self.cols // 8) - 1])  # Set RAM X Start/End
     b"\x44\x02\x00\x31"  # Set RAM X Start/End
     #         self._send_command(0x45, [0x00, 0x00] + packed_height)  # Set RAM Y Start/End
@@ -70,9 +85,13 @@ class SSD1619A(displayio.EPaperDisplay):
         width = kwargs["width"]
         height = kwargs["height"]
         
+        #print('width: {:0} height: {:0}'.format(width, height))
+        
         start_sequence = bytearray(_START_SEQUENCE)
-        start_sequence[11] = (height-1) & 0xFF
-        start_sequence[12] = ((height-1) >> 8) & 0xFF
+        #start_sequence[14] = (height-1) & 0xFF
+        #start_sequence[15] = ((height-1) >> 8) & 0xFF
+
+        
 
         #print('packed_height: \\x{:02x}\\x{:02x}'.format(start_sequence[10], start_sequence[11]))
 
@@ -187,13 +206,13 @@ class SSD1619A(displayio.EPaperDisplay):
             **kwargs,
             ram_width=width,
             ram_height=height,
-            set_column_window_command=0x44,
-            set_row_window_command=0x45,
             set_current_column_command=0x4E,
             set_current_row_command=0x4F,
             write_black_ram_command=0x24,
             write_color_ram_command=0x26,
             refresh_display_command=0x20,
+            color_bits_inverted=False,
+            black_bits_inverted=False,
 
         )
     

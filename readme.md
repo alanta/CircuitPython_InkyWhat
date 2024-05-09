@@ -29,7 +29,12 @@ Reference:
 * [InkyWhat pinout](https://pinout.xyz/pinout/inky_what#)
 * [TinyS2 pinout](https://unexpectedmaker.com/tinys2)
 
-## Inky driver
+There are 2 versions in this repository:
+
+* `inky.py` - The original driver ported to CircuitPython
+* `ssd1619a.py` - A new CircuitPython driver for the SSD1619A display controller used in the InkyWhat
+
+## Inky driver for CircuitPython
 This driver is ported from [library/inky/inky.py](https://github.com/pimoroni/inky/blob/master/library/inky/inky.py) in the Pimoroni Inky library. 
 It works with the original Red, Black and Yellow Inky What.
 Pimoroni has not specified the driver chip but the instructions line up with the SSD1619A.
@@ -42,3 +47,10 @@ The original eeprom code was dropped in favor of the CircuitPython driver for th
 * CircuitPython doesn't have the full numpy lib, especially packbits is missing
 * CircuitPython has Bitmap from display IO which makes working with image data much easier
 * EEPROM code was replaced with the CircuitPython lib for the same chip
+* Supports outputting a bitmap to the display, no drawing support
+* Data processing happens in Python, which makes display updates reeeally slow
+
+## CircuitPython driver for SSD1619A-based ePaper display
+* Uses Adafruit's `displayio` lib for the display, allowing drawing etc.
+* Fast bitmap data processing using CircuitPython's `Bitmap` class
+* This driver is limited to original 3-color 400x300 InkyWhat, other versions use different display controllers

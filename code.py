@@ -7,10 +7,11 @@ from ulab import numpy as np
 displayio.release_displays()
 
 if(False) :
+    # Use Pimoroni Inky driver, ported to CircuitPython
     import inky
     import adafruit_imageload
 
-    bitmap, palette = adafruit_imageload.load("InkywHAT-400x300.bmp")
+    bitmap, palette = adafruit_imageload.load("CircuitPython-400x300.bmp")
 
     screen=inky.Inky(colour='yellow')
     screen.setup()
@@ -19,7 +20,7 @@ if(False) :
 
     screen.show()
 else :
-    
+    # Use Adafruit EPD-based driver, to enable using displayio
     spi=board.SPI()
     epd_cs = board.IO7
     epd_dc = board.IO6
@@ -34,9 +35,9 @@ else :
     time.sleep(0.1)
 
     display_bus = displayio.FourWire(
-    spi, command=epd_dc, chip_select=epd_cs #, baudrate=1000000
+        spi, command=epd_dc, chip_select=epd_cs, baudrate=488000
     )
-    time.sleep(1)
+    #time.sleep(1)
 
     display = ssd1619a.SSD1619A(
     display_bus,
@@ -44,23 +45,24 @@ else :
     busy_pin=epd_busy,
     width=400,
     height=300,
-    highlight_color=0xFF0000,
-
+        highlight_color=0xFF0000
     )
 
     g = displayio.Group()
 
-    with open("/InkywHAT-400x300.bmp", "rb") as f:
-    pic = displayio.OnDiskBitmap(f)
+    with open("/CircuitPython-400x300.bmp", "rb") as f:
+        pic = displayio.OnDiskBitmap(f)
 
     t = displayio.TileGrid(pic, pixel_shader=pic.pixel_shader)
 
     g.append(t)
 
-    display.show(g)
+    display.root_group = g
 
     display.refresh()
 
     print("updating")
 
     display.busy_wait()
+
+    displayio.release_displays()
